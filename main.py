@@ -26,7 +26,7 @@ def main():
         loop.add_signal_handler(s, lambda sig=s: asyncio.create_task(shutdown(sig, loop)))
 
     try:
-        loop.create_task(udp_loop("0.0.0.0", 11200))
+        loop.create_task(udp_loop("0.0.0.0", 11200, loop))
         loop.run_forever()
     finally:
         loop.close()

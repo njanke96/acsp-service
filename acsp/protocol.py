@@ -3,7 +3,7 @@ ACSP Protocol Functions
 """
 import struct
 from enum import IntEnum
-from typing import TypeVar, Tuple
+from typing import TypeVar, Tuple, Callable
 
 from acsp.exceptions import UnsupportedMessageException, MessageParseException
 
@@ -49,109 +49,58 @@ class Vector3f:
         self.z = z
 
 
-# Outgoing messages
+# Outgoing message functions
 
-def car_info(car_id: int) -> bytes:
+
+def car_info_request(car_id: int) -> bytes:
     return bytes([ACSPMessage.ACSP_GET_CAR_INFO, car_id])
 
 
 # Incoming Messages
 
-class BaseMessage:
-    pass
-
-
-class CarInfo(BaseMessage):
-    car_id: int
-    is_connected: bool
-    model: str
-    skin: str
-    driver_name: str
-    driver_team: str
-    guid: str
-
-    def __init__(self, message: bytes):
-        data = _parse_struct(
-            message,
-            _parse_byte,
-            _parse_byte,
-            _parse_unicode,
-            _parse_unicode,
-            _parse_unicode,
-            _parse_unicode,
-            _parse_unicode,
-        )
-
-        self.car_id = data[0]
-        self.is_connected = data[1]
-        self.model = data[2]
-        self.skin = data[3]
-        self.driver_name = data[4]
-        self.driver_team = data[5]
-        self.guid = data[6]
-
-
-class LapCompleted(BaseMessage):
-    car_id: int
-    laptime: int
-    cuts: int
-
-    # TODO: leaderboard array, grip
-
-    def __init__(self, message: bytes):
-        data = _parse_struct(message, _parse_byte, _parse_int32, _parse_byte)
-        self.car_id = data[0]
-        self.laptime = data[1]
-        self.cuts = data[2]
-
-
-# Incoming message parsing
-
-def parse_acsp_message(raw_message: bytes) -> _T | None:
-    # message type (first byte)
-    try:
-        msg_type = ACSPMessage(raw_message[0])
-    except ValueError:
-        return None
-
-    msg = raw_message[1:]
-
-    try:
-        return {
-            ACSPMessage.ACSP_LAP_COMPLETED: LapCompleted,
-            ACSPMessage.ACSP_CAR_INFO: CarInfo,
-        }.get(msg_type)(msg)
-    except KeyError:
-        raise UnsupportedMessageException(int(msg_type))
-
-
 _ParserReturn = Tuple[_T, int]
+_Parser = Callable[[bytes], _ParserReturn]
+
+
+def parse_payload(payload: bytes, parsers: list[_Parser]) -> list:
+    """
+    Unpack a message given a UDP payload and some parsers.
+    """
+    data = []
+    slice_ = payload
+
+    for parser in parsers:
+        parsed, inc = parser(slice_)
+        data.append(parsed)
+        slice_ = slice_[inc:]
+
+    return data
 
 
 def _parse_byte(chunk: bytes) -> _ParserReturn[int]:
-    return chunk[0], 1
+    return struct.unpack("B", chunk[:1])[0], 1
 
 
 def _parse_short(chunk: bytes) -> _ParserReturn[int]:
-    return int.from_bytes(chunk[:2], byteorder="big", signed=False), 2
+    return struct.unpack("H", chunk[:2])[0], 2
 
 
 def _parse_int32(chunk: bytes) -> _ParserReturn[int]:
-    return int.from_bytes(chunk[:4], byteorder="big", signed=False), 4
+    return struct.unpack("I", chunk[:4])[0], 4
 
 
 def _parse_float(chunk: bytes) -> _ParserReturn[float]:
     try:
-        return struct.unpack(">f", chunk[:4])[0], 4
+        return struct.unpack("f", chunk[:4])[0], 4
     except struct.error:
         raise MessageParseException(f"Could not unpack to float: {chunk}")
 
 
-def _parse_vector3xfloat(chunk: bytes) -> _ParserReturn[Vector3f]:
+def _parse_vector3f(chunk: bytes) -> _ParserReturn[Vector3f]:
     try:
-        x = struct.unpack(">f", chunk[:4])[0]
-        y = struct.unpack(">f", chunk[4:8])[0]
-        z = struct.unpack(">f", chunk[8:12])[0]
+        x = struct.unpack("f", chunk[:4])[0]
+        y = struct.unpack("f", chunk[4:8])[0]
+        z = struct.unpack("f", chunk[8:12])[0]
     except struct.error:
         raise MessageParseException(f"Could not unpack to Vector3f: {chunk}")
 
@@ -176,21 +125,75 @@ def _parse_unicode(chunk: bytes) -> _ParserReturn[str]:
         raise MessageParseException(f"Could not parse as utf-32: {chunk}")
 
 
-def _parse_struct(message: bytes, *parsers) -> list:
-    """
-    Unpack a message given a UDP payload and some parsers.
-    :param message: payload
-    :param parsers: parsers returning _ParserReturn
-    :return: list of data
-    """
-    data = []
-    slice_ = message
-    ptr = 0
+# Message Classes
 
-    for parser in parsers:
-        parsed, inc = parser(slice_)
-        data.append(parsed)
-        ptr += inc
-        slice_ = slice_[ptr:]
+class BaseMessage:
+    """
+    Base class for incoming messages
+    Subclasses declare the class variable __parsers__, as well as type annotations for fields
+    """
 
-    return data
+    __parsers__: list[_Parser]
+
+    def __init__(self, **kwargs):
+        for key, val in kwargs.items():
+            setattr(self, key, val)
+
+    @classmethod
+    def from_payload(cls, message: bytes):
+        data = parse_payload(message, cls.__parsers__)
+
+        # fails if annotation order and len not consistent with parsers
+        kwargs = {}
+        for index, field in enumerate(cls.__annotations__):
+            kwargs[field] = data[index]
+
+        return cls(**kwargs)
+
+
+class CarInfo(BaseMessage):
+    __parsers__ = [
+        _parse_byte,
+        _parse_byte,
+        _parse_unicode,
+        _parse_unicode,
+        _parse_unicode,
+        _parse_unicode,
+        _parse_unicode,
+    ]
+
+    car_id: int
+    is_connected: bool
+    model: str
+    skin: str
+    driver_name: str
+    driver_team: str
+    guid: str
+
+
+class LapCompleted(BaseMessage):
+    __parsers__ = [_parse_byte, _parse_int32, _parse_byte]
+
+    car_id: int
+    laptime: int
+    cuts: int
+
+    # TODO: leaderboard array, grip
+
+
+def parse_acsp_message(raw_message: bytes) -> BaseMessage:
+    # message type (first byte)
+    try:
+        msg_type = ACSPMessage(raw_message[0])
+    except ValueError:
+        raise UnsupportedMessageException(raw_message[0])
+
+    msg = raw_message[1:]
+
+    try:
+        return {
+            ACSPMessage.ACSP_LAP_COMPLETED: LapCompleted,
+            ACSPMessage.ACSP_CAR_INFO: CarInfo,
+        }.get(msg_type).from_payload(msg)
+    except KeyError:
+        raise UnsupportedMessageException(int(msg_type))
