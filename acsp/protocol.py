@@ -118,9 +118,9 @@ def parse_acsp_message(raw_message: bytes) -> _T | None:
 
     try:
         return {
-            ACSPMessage.ACSP_LAP_COMPLETED: LapCompleted(msg),
-            ACSPMessage.ACSP_CAR_INFO: CarInfo(msg),
-        }.get(msg_type)
+            ACSPMessage.ACSP_LAP_COMPLETED: LapCompleted,
+            ACSPMessage.ACSP_CAR_INFO: CarInfo,
+        }.get(msg_type)(msg)
     except KeyError:
         raise UnsupportedMessageException(int(msg_type))
 
@@ -189,6 +189,7 @@ def _parse_struct(message: bytes, *parsers) -> list:
 
     for parser in parsers:
         parsed, inc = parser(slice_)
+        data.append(parsed)
         ptr += inc
         slice_ = slice_[ptr:]
 

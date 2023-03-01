@@ -2,9 +2,12 @@
 UDP Client
 """
 import asyncio
+import logging
+import traceback
 
 from acsp.protocol import parse_acsp_message, LapCompleted, CarInfo
 from acsp.aioudp import open_local_endpoint
+from acsp.exceptions import UnsupportedMessageException, MessageParseException
 
 
 async def udp_loop(bind_addr: str, bind_port: int):
@@ -14,7 +17,19 @@ async def udp_loop(bind_addr: str, bind_port: int):
         try:
             # receive messages
             data, addr = await local.receive()
-            message = parse_acsp_message(data)
+
+            try:
+                message = parse_acsp_message(data)
+            except UnsupportedMessageException as e:
+                logging.debug(e)
+                continue
+            except MessageParseException as e:
+                logging.warning(e)
+                continue
+            except Exception as e:
+                logging.error(f"Exception {e.__class__}:")
+                traceback.print_exc()
+                continue
 
             if isinstance(message, LapCompleted):
                 print("Got a LapCompleted:")
