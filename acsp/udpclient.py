@@ -59,8 +59,8 @@ async def udp_loop(bind_addr: str, bind_port: int, event_loop: asyncio.AbstractE
                 print(f"Cuts: {bool(message.cuts)}")
                 print("----")
 
-                # car info request
-                await request_car_info_for_lap(message, addr)
+                # car info request (don't await)
+                event_loop.create_task(request_car_info_for_lap(message, addr))
 
             elif isinstance(message, CarInfo):
                 print("Got a CarInfo:")
@@ -71,6 +71,8 @@ async def udp_loop(bind_addr: str, bind_port: int, event_loop: asyncio.AbstractE
                 if message.car_id in lap_events_waiting:
                     print("We were waiting for this info, process the lap completed event.")
                     del lap_events_waiting[message.car_id]
+
+                print("-----")
         except asyncio.CancelledError:
             break
 
