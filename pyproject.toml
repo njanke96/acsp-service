@@ -5,7 +5,10 @@ description = ""
 authors = ["Nathan Janke"]
 license = "MIT"
 readme = "README.md"
-packages = [{include = "acsp_service"}]
+packages = [
+    {include = "acsp"},
+    {include = "webapi"},
+]
 
 [tool.poetry.dependencies]
 python = "^3.11"
