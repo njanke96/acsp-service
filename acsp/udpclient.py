@@ -3,7 +3,7 @@ UDP Client
 """
 import asyncio
 
-from acsp.acsp import parse_acsp_message, LapCompleted, CarInfo
+from acsp.protocol import parse_acsp_message, LapCompleted, CarInfo
 from acsp.aioudp import open_local_endpoint
 
 
