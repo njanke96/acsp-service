@@ -5,9 +5,9 @@ import asyncio
 import logging
 import traceback
 
-import acsp.protocol as proto
-from acsp.aioudp import open_local_endpoint
-from acsp.exceptions import UnsupportedMessageException, MessageParseException
+import acsps.protocol as proto
+from acsps.aioudp import open_local_endpoint
+from acsps.exceptions import UnsupportedMessageException, MessageParseException
 
 connection_map: dict[int, proto.NewConnection] = dict()
 

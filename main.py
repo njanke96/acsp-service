@@ -2,7 +2,8 @@ import asyncio
 import logging
 import signal
 
-from acsp.udpclient import udp_loop
+from acsps.udpclient import udp_loop
+from acsps.database.main import create_database_tables
 
 logging.root.setLevel(logging.INFO)
 logging.basicConfig(level=logging.INFO, format="%(levelname)s : %(message)s")
@@ -19,6 +20,8 @@ async def shutdown(sig, loop_):
 
 
 def main():
+    create_database_tables()
+
     loop = asyncio.new_event_loop()
 
     signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)

@@ -5,7 +5,7 @@ import struct
 from enum import IntEnum
 from typing import TypeVar, Tuple, Callable
 
-from acsp.exceptions import UnsupportedMessageException, MessageParseException
+from acsps.exceptions import UnsupportedMessageException, MessageParseException
 
 _T = TypeVar("_T")
 
