@@ -21,6 +21,9 @@ class _Database:
         if os.environ.get("PYTEST_ENV", None):
             self.url = f"{self.url}.test"
 
+        # disable databases' logger
+        logging.getLogger("databases").propagate = False
+
         self.db = Database(self.url, force_rollback=self.rollback)
         logging.info(f"Database URI: {self.url.__repr__()}")
 

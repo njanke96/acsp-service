@@ -2,11 +2,27 @@ import asyncio
 import logging
 import signal
 
+import uvicorn
+import uvicorn.logging
+
+import acsps.env
 from acsps.udpclient import udp_loop
 from acsps.database.main import create_database_tables
+from acsps.webapi.app import app
 
-logging.root.setLevel(logging.INFO)
-logging.basicConfig(level=logging.INFO, format="%(levelname)s : %(message)s")
+logging_fmt = "%(levelname)s:%(name)s:%(message)s"   # the default
+logging_fmt_uvicorn = "%(levelname)s:uvicorn:%(message)s"
+
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
+root_logger.name = "acsps"
+root_handler = root_logger.handlers[0]
+root_handler.setFormatter(logging.Formatter(logging_fmt))
+
+
+class ServerWithoutSigHandlers(uvicorn.Server):
+    def install_signal_handlers(self):
+        pass
 
 
 async def shutdown(sig, loop_):
@@ -19,6 +35,21 @@ async def shutdown(sig, loop_):
     loop_.stop()
 
 
+async def uvicorn_task():
+    conf = uvicorn.Config(
+        app,
+        host=acsps.env.ACSPS_WEB_ADDR,
+        port=int(acsps.env.ACSPS_WEB_PORT),
+        access_log=False,
+    )
+
+    logger = logging.getLogger("uvicorn")
+    logger.handlers[0].setFormatter(logging.Formatter(logging_fmt_uvicorn))
+
+    server = ServerWithoutSigHandlers(conf)
+    await server.serve()
+
+
 def main():
     create_database_tables()
 
@@ -26,10 +57,13 @@ def main():
 
     signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
     for s in signals:
-        loop.add_signal_handler(s, lambda sig=s: asyncio.create_task(shutdown(sig, loop)))
+        loop.add_signal_handler(
+            s, lambda sig=s: asyncio.create_task(shutdown(sig, loop))
+        )
 
     try:
-        loop.create_task(udp_loop("0.0.0.0", 11200))
+        loop.create_task(udp_loop(acsps.env.ACSPS_UDP_ADDR, int(acsps.env.ACSPS_UDP_PORT)))
+        loop.create_task(uvicorn_task())
         loop.run_forever()
     finally:
         loop.close()
