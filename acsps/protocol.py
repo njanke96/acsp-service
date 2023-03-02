@@ -63,6 +63,20 @@ def broadcast_message(message: str) -> bytes:
     return data
 
 
+def send_message(car_id: int, message: str) -> bytes:
+    if len(message) > 255:
+        message = message[:225]
+
+    unicode_len = len(message) * 4
+    data = struct.pack("BBB%ds" % (unicode_len,),
+        ACSPMessage.ACSP_SEND_CHAT,
+        car_id,
+        len(message),
+        message.encode('utf-32'),
+    )
+    return data
+
+
 def car_info_request(car_id: int) -> bytes:
     return bytes([ACSPMessage.ACSP_GET_CAR_INFO, car_id])
 
@@ -120,7 +134,7 @@ def _parse_vector3f(chunk: bytes) -> _ParserReturn[Vector3f]:
 
 def _parse_string(chunk: bytes) -> _ParserReturn[str]:
     strlen = chunk[0]
-    string = chunk[1 : strlen + 1]
+    string = chunk[1: strlen + 1]
 
     try:
         return string.decode("utf-8"), strlen + 1
@@ -130,9 +144,9 @@ def _parse_string(chunk: bytes) -> _ParserReturn[str]:
 
 def _parse_unicode(chunk: bytes) -> _ParserReturn[str]:
     strlen = (
-        chunk[0] * 4
+            chunk[0] * 4
     )  # first byte is the number of unicode characters (4 bytes each)
-    string = chunk[1 : strlen + 1]
+    string = chunk[1: strlen + 1]
 
     try:
         return string.decode("utf-32"), strlen + 1

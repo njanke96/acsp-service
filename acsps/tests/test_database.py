@@ -3,7 +3,8 @@ import pytest_asyncio
 from databases import Database
 
 from acsps.database.tables import lap_times
-from acsps.database.queries import record_lap_pr, get_lap_records, get_lap_pr, get_recent_broken_records
+from acsps.database.queries import record_lap_pr, get_lap_records, get_lap_pr, get_recent_broken_records, \
+    compare_to_server_record
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -34,7 +35,7 @@ async def test_record_lap_pr(database_client: Database):
             1.0
         )
 
-        assert result
+        assert result == 2881
 
         result = await database_client.fetch_one(lap_times.select())
         assert result["driver_guid"] == "1"
@@ -57,7 +58,7 @@ async def test_record_lap_pr(database_client: Database):
             1.0
         )
 
-        assert not result
+        assert result > 0
 
         result = await database_client.fetch_one(lap_times.select())
         assert result["lap_time_ms"] == 2881
@@ -176,3 +177,12 @@ async def test_get_recent_broken_records(database_client: Database):
         assert len(result) == 2
         assert result[0]["lap_time_ms"] == 2211
         assert result[1]["lap_time_ms"] == 2440
+
+        # compare should be accurate
+        diff = await compare_to_server_record(database_client, "track1", "gp", "ks_car", 2450)
+        assert diff == 10
+
+        # there should be nothing to compare to on track3
+        diff = await compare_to_server_record(database_client, "track3", "gp", "ks_car", 2450)
+        assert diff == 2450
+
