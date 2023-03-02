@@ -109,20 +109,22 @@ def _parse_vector3f(chunk: bytes) -> _ParserReturn[Vector3f]:
 
 def _parse_string(chunk: bytes) -> _ParserReturn[str]:
     strlen = chunk[0]
+    string = chunk[1: strlen + 1]
 
     try:
-        return chunk[1 : strlen + 1].decode("ascii"), strlen + 1
+        return string.decode("utf-8"), strlen + 1
     except UnicodeDecodeError:
-        raise MessageParseException(f"Could not parse as ascii: {chunk}")
+        raise MessageParseException(f"Could not parse as utf-8: {string}")
 
 
 def _parse_unicode(chunk: bytes) -> _ParserReturn[str]:
-    strlen = chunk[0]
+    strlen = chunk[0] * 4  # first byte is the number of unicode characters (4 bytes each)
+    string = chunk[1: strlen + 1]
 
     try:
-        return chunk[1 : strlen + 1].decode("utf-32"), strlen + 1
+        return string.decode("utf-32"), strlen + 1
     except UnicodeDecodeError:
-        raise MessageParseException(f"Could not parse as utf-32: {chunk}")
+        raise MessageParseException(f"Could not parse as utf-32: {string}")
 
 
 # Message Classes
@@ -179,6 +181,26 @@ class LapCompleted(BaseMessage):
     cuts: int
 
     # TODO: leaderboard array, grip
+
+
+class NewConnection(BaseMessage):
+    __parsers__ = [_parse_unicode, _parse_unicode, _parse_byte, _parse_string, _parse_string]
+
+    driver_name: str
+    driver_guid: str
+    car_id: int
+    car_model: str
+    car_skin: str
+
+
+class ConnectionClosed(BaseMessage):
+    __parsers__ = [_parse_unicode, _parse_unicode, _parse_byte, _parse_string, _parse_string]
+
+    driver_name: str
+    driver_guid: str
+    car_id: int
+    car_model: str
+    car_skin: str
 
 
 def parse_acsp_message(raw_message: bytes) -> BaseMessage:
