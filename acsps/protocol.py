@@ -52,6 +52,17 @@ class Vector3f:
 # Outgoing message functions
 
 
+def broadcast_message(message: str) -> bytes:
+    unicode_msg_len = len(message) * 4
+    data = struct.pack(
+        "BB%ds" % (unicode_msg_len,),
+        ACSPMessage.ACSP_BROADCAST_CHAT,
+        len(message),
+        message.encode("utf-32"),
+    )
+    return data
+
+
 def car_info_request(car_id: int) -> bytes:
     return bytes([ACSPMessage.ACSP_GET_CAR_INFO, car_id])
 
@@ -266,16 +277,12 @@ def parse_acsp_message(raw_message: bytes) -> BaseMessage:
     msg = raw_message[1:]
 
     try:
-        return (
-            {
-                ACSPMessage.ACSP_LAP_COMPLETED: LapCompleted,
-                ACSPMessage.ACSP_CAR_INFO: CarInfo,
-                ACSPMessage.ACSP_CONNECTION_CLOSED: ConnectionClosed,
-                ACSPMessage.ACSP_NEW_CONNECTION: NewConnection,
-                ACSPMessage.ACSP_NEW_SESSION: NewSession,
-            }
-            [msg_type]
-            .from_payload(msg)
-        )
+        return {
+            ACSPMessage.ACSP_LAP_COMPLETED: LapCompleted,
+            ACSPMessage.ACSP_CAR_INFO: CarInfo,
+            ACSPMessage.ACSP_CONNECTION_CLOSED: ConnectionClosed,
+            ACSPMessage.ACSP_NEW_CONNECTION: NewConnection,
+            ACSPMessage.ACSP_NEW_SESSION: NewSession,
+        }[msg_type].from_payload(msg)
     except KeyError:
         raise UnsupportedMessageException(int(msg_type))

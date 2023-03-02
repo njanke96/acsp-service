@@ -7,6 +7,7 @@ import traceback
 
 import acsps.protocol as proto
 from acsps.aioudp import open_local_endpoint
+from acsps.common import format_ms_time
 from acsps.database.main import database
 from acsps.database.queries import record_lap_pr
 from acsps.exceptions import UnsupportedMessageException, MessageParseException
@@ -51,6 +52,11 @@ async def udp_loop(bind_addr: str, bind_port: int):
                 continue
 
             if isinstance(message, proto.LapCompleted):
+                # ignore cut laps
+                if message.cuts:
+                    logging.info(f"Ignoring cut lap from car {message.car_id}")
+                    continue
+
                 # record lap pr if all required data is available
                 if message.car_id in connection_map:
                     connection = connection_map[message.car_id]
@@ -59,7 +65,7 @@ async def udp_loop(bind_addr: str, bind_port: int):
                         and session_data.track_config is not None
                     ):
                         async with database.acquire() as db:
-                            await record_lap_pr(
+                            result = await record_lap_pr(
                                 db,
                                 driver_guid=connection.driver_guid,
                                 track_name=session_data.track_name,
@@ -69,6 +75,19 @@ async def udp_loop(bind_addr: str, bind_port: int):
                                 car_model=connection.car_model,
                                 grip_level=1.0,
                             )
+
+                            if result:
+                                lap_time_formatted = format_ms_time(message.laptime)
+                                logging.info(
+                                    f"{connection.driver_name} set a new personal best on {session_data.track_name}/"
+                                    f"{session_data.track_config} with time {lap_time_formatted}"
+                                )
+
+                                broadcast_msg = proto.broadcast_message(
+                                    f"{connection.driver_name} set a new PB of {lap_time_formatted}"
+                                )
+
+                                await local.send(broadcast_msg, addr)
             elif isinstance(message, proto.NewConnection):
                 # add to connection map
                 connection_map[message.car_id] = message
