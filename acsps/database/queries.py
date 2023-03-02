@@ -9,6 +9,8 @@ from databases.interfaces import Record
 
 from acsps.database.tables import lap_times
 
+DEFAULT_QUERY_LIMIT = 100
+
 
 async def get_lap_pr(
     db: Database,
@@ -17,14 +19,11 @@ async def get_lap_pr(
     track_config: str,
     car_model: str,
 ) -> Record | None:
-    query = (
-        lap_times.select()
-        .where(
-            lap_times.c.driver_guid == driver_guid,
-            lap_times.c.track_name == track_name,
-            lap_times.c.track_config == track_config,
-            lap_times.c.car_model == car_model,
-        )
+    query = lap_times.select().where(
+        lap_times.c.driver_guid == driver_guid,
+        lap_times.c.track_name == track_name,
+        lap_times.c.track_config == track_config,
+        lap_times.c.car_model == car_model,
     )
 
     result = await db.fetch_one(query)
@@ -65,7 +64,9 @@ async def record_lap_pr(
         return False
 
 
-async def get_lap_records(db: Database, track_name: str, track_config: str, car_model: str):
+async def get_lap_records(
+    db: Database, track_name: str, track_config: str, car_model: str
+):
     """
     Return the top 10 lap records for a track/config/car.
     """
@@ -83,3 +84,46 @@ async def get_lap_records(db: Database, track_name: str, track_config: str, car_
     results = await db.fetch_all(query)
 
     return results
+
+
+async def get_recent_broken_records(db: Database):
+    """
+    Return the most recently broken lap records. Since there is no separate table for this it will only include
+    the most recent record broken on a track/config/car. That is, if a user breaks a record on a
+    track/config/car, their most recent record will be the only one to show up here.
+
+    This is intended to be polled periodically to announce records.
+    """
+    # fastest lap for each track/confg/car
+    min_ = sqla.func.min(lap_times.c.lap_time_ms).label("lap_record")
+    sub_query = (
+        sqla.select(
+            min_,
+            lap_times.c.track_name,
+            lap_times.c.track_config,
+            lap_times.c.car_model,
+        )
+        .select_from(lap_times)
+        .group_by(
+            lap_times.c.track_name, lap_times.c.track_config, lap_times.c.car_model
+        )
+        .subquery("sub")
+    )
+
+    query = (
+        sqla.select(lap_times)
+        .select_from(lap_times)
+        .join(
+            sub_query,
+            sqla.and_(
+                lap_times.c.lap_time_ms == sqla.literal_column("sub.lap_record"),
+                lap_times.c.track_name == sqla.literal_column("sub.track_name"),
+                lap_times.c.track_config == sqla.literal_column("sub.track_config"),
+                lap_times.c.car_model == sqla.literal_column("sub.car_model"),
+            ),
+        )
+        .order_by(sqla.desc(lap_times.c.timestamp))
+        .limit(DEFAULT_QUERY_LIMIT)
+    )
+
+    return await db.fetch_all(query)
