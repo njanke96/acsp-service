@@ -11,9 +11,9 @@ lap_times = sqla.Table(
     sqla.Column("driver_guid", sqla.String, primary_key=True),
     sqla.Column("track_name", sqla.String, primary_key=True),
     sqla.Column("track_config", sqla.String, primary_key=True),
+    sqla.Column("car_model", sqla.String, primary_key=True),
     sqla.Column("driver_name", sqla.String, nullable=False),
     sqla.Column("lap_time_ms", sqla.Integer, nullable=False),
-    sqla.Column("car_model", sqla.String, nullable=False),
     sqla.Column("grip_level", sqla.Float, nullable=False),
     sqla.Column("timestamp", sqla.DateTime, nullable=False)
 )

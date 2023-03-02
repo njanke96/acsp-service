@@ -13,10 +13,12 @@ from acsps.exceptions import UnsupportedMessageException, MessageParseException
 
 connection_map: dict[int, proto.NewConnection] = dict()
 
+
 class _SessionData:
     def __init__(self):
         self.track_name = None
         self.track_config = None
+
 
 session_data = _SessionData()
 
@@ -52,9 +54,11 @@ async def udp_loop(bind_addr: str, bind_port: int):
                 # record lap pr if all required data is available
                 if message.car_id in connection_map:
                     connection = connection_map[message.car_id]
-                    if session_data.track_name is not None and session_data.track_config is not None:
+                    if (
+                        session_data.track_name is not None
+                        and session_data.track_config is not None
+                    ):
                         async with database.acquire() as db:
-                            print("recording lap pr")
                             await record_lap_pr(
                                 db,
                                 driver_guid=connection.driver_guid,
@@ -65,11 +69,6 @@ async def udp_loop(bind_addr: str, bind_port: int):
                                 car_model=connection.car_model,
                                 grip_level=1.0,
                             )
-                else:
-                    logging.error(
-                        f"Got a LapCompleted for car id {message.car_id}, "
-                        "never got a NewConnection for this car id. Can't record lap."
-                    )
             elif isinstance(message, proto.NewConnection):
                 # add to connection map
                 connection_map[message.car_id] = message
