@@ -274,7 +274,7 @@ def parse_acsp_message(raw_message: bytes) -> BaseMessage:
                 ACSPMessage.ACSP_NEW_CONNECTION: NewConnection,
                 ACSPMessage.ACSP_NEW_SESSION: NewSession,
             }
-            .get(msg_type)
+            [msg_type]
             .from_payload(msg)
         )
     except KeyError:

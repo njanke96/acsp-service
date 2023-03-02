@@ -78,7 +78,6 @@ async def udp_loop(bind_addr: str, bind_port: int):
                 if message.car_id in connection_map:
                     del connection_map[message.car_id]
             elif isinstance(message, proto.NewSession):
-                print(f"Track name: {message.track_name}, {message.track_config}")
                 session_data.track_name = message.track_name
                 session_data.track_config = message.track_config
 
