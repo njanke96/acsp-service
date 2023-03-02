@@ -46,7 +46,7 @@ async def record_lap_pr(
     returns true when the record was updated, false otherwise
     """
     record = await get_lap_pr(db, driver_guid, track_name, track_config, car_model)
-    if (not record) or record["lap_time_ms"] > lap_time_ms:
+    if record is None or record["lap_time_ms"] > lap_time_ms:
         await db.execute(
             lap_times.insert(),
             values={
@@ -67,7 +67,7 @@ async def record_lap_pr(
 
 async def get_lap_records(db: Database, track_name: str, track_config: str, car_model: str):
     """
-    Return the top 10 lap records for a track/config.
+    Return the top 10 lap records for a track/config/car.
     """
     query = (
         lap_times.select()
