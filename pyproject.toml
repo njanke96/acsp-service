@@ -6,7 +6,6 @@ authors = ["Nathan Janke"]
 license = "MIT"
 readme = "README.md"
 packages = [
-    {include = "acsps"},
 ]
 
 [tool.poetry.dependencies]

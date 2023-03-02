@@ -10,8 +10,8 @@ from acsps.udpclient import udp_loop
 from acsps.database.main import create_database_tables
 from acsps.webapi.app import app
 
-logging_fmt = "%(levelname)s:%(name)s:%(message)s"   # the default
-logging_fmt_uvicorn = "%(levelname)s:uvicorn:%(message)s"
+logging_fmt = "%(levelname)s:%(name)s : %(message)s"   # the default
+logging_fmt_uvicorn = "%(levelname)s:uvicorn : %(message)s"
 
 root_logger = logging.getLogger()
 root_logger.setLevel(logging.INFO)
@@ -62,7 +62,7 @@ def main():
         )
 
     try:
-        loop.create_task(udp_loop(acsps.env.ACSPS_UDP_ADDR, int(acsps.env.ACSPS_UDP_PORT)))
+        loop.create_task(udp_loop(acsps.env.ACSPS_UDP_ADDR, int(acsps.env.ACSPS_UDP_PORT)), name="UDP")
         loop.create_task(uvicorn_task())
         loop.run_forever()
     finally:

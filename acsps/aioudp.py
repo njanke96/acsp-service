@@ -120,10 +120,14 @@ class Endpoint:
         """
         if self._queue.empty() and self._closed:
             raise IOError("Enpoint is closed")
-        data, addr = await self._queue.get()
-        if data is None:
-            raise IOError("Enpoint is closed")
-        return data, addr
+
+        try:
+            data, addr = await self._queue.get()
+            if data is None:
+                raise IOError("Enpoint is closed")
+            return data, addr
+        except asyncio.CancelledError:
+            raise asyncio.CancelledError()
 
     def abort(self):
         """Close the transport immediately."""
