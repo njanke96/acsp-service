@@ -109,7 +109,7 @@ def _parse_vector3f(chunk: bytes) -> _ParserReturn[Vector3f]:
 
 def _parse_string(chunk: bytes) -> _ParserReturn[str]:
     strlen = chunk[0]
-    string = chunk[1: strlen + 1]
+    string = chunk[1 : strlen + 1]
 
     try:
         return string.decode("utf-8"), strlen + 1
@@ -118,8 +118,10 @@ def _parse_string(chunk: bytes) -> _ParserReturn[str]:
 
 
 def _parse_unicode(chunk: bytes) -> _ParserReturn[str]:
-    strlen = chunk[0] * 4  # first byte is the number of unicode characters (4 bytes each)
-    string = chunk[1: strlen + 1]
+    strlen = (
+        chunk[0] * 4
+    )  # first byte is the number of unicode characters (4 bytes each)
+    string = chunk[1 : strlen + 1]
 
     try:
         return string.decode("utf-32"), strlen + 1
@@ -128,6 +130,7 @@ def _parse_unicode(chunk: bytes) -> _ParserReturn[str]:
 
 
 # Message Classes
+
 
 class BaseMessage:
     """
@@ -184,7 +187,13 @@ class LapCompleted(BaseMessage):
 
 
 class NewConnection(BaseMessage):
-    __parsers__ = [_parse_unicode, _parse_unicode, _parse_byte, _parse_string, _parse_string]
+    __parsers__ = [
+        _parse_unicode,
+        _parse_unicode,
+        _parse_byte,
+        _parse_string,
+        _parse_string,
+    ]
 
     driver_name: str
     driver_guid: str
@@ -193,8 +202,52 @@ class NewConnection(BaseMessage):
     car_skin: str
 
 
+class NewSession(BaseMessage):
+    proto_version: int
+    session_index: int
+    current_sess_index: int
+    session_count: int
+    server_name: str
+    track_name: str
+    track_config: str
+    name: str
+    session_type: int
+    time: int
+    laps: int
+    wait_time: int
+    ambient_temp: int
+    track_temp: int
+    weather_graph: str
+    elapsed_ms: int
+
+    __parsers__ = [
+        _parse_byte,
+        _parse_byte,
+        _parse_byte,
+        _parse_byte,
+        _parse_unicode,
+        _parse_string,
+        _parse_string,
+        _parse_string,
+        _parse_byte,
+        _parse_short,
+        _parse_short,
+        _parse_short,
+        _parse_byte,
+        _parse_byte,
+        _parse_string,
+        _parse_int32,
+    ]
+
+
 class ConnectionClosed(BaseMessage):
-    __parsers__ = [_parse_unicode, _parse_unicode, _parse_byte, _parse_string, _parse_string]
+    __parsers__ = [
+        _parse_unicode,
+        _parse_unicode,
+        _parse_byte,
+        _parse_string,
+        _parse_string,
+    ]
 
     driver_name: str
     driver_guid: str
@@ -213,9 +266,16 @@ def parse_acsp_message(raw_message: bytes) -> BaseMessage:
     msg = raw_message[1:]
 
     try:
-        return {
-            ACSPMessage.ACSP_LAP_COMPLETED: LapCompleted,
-            ACSPMessage.ACSP_CAR_INFO: CarInfo,
-        }.get(msg_type).from_payload(msg)
+        return (
+            {
+                ACSPMessage.ACSP_LAP_COMPLETED: LapCompleted,
+                ACSPMessage.ACSP_CAR_INFO: CarInfo,
+                ACSPMessage.ACSP_CONNECTION_CLOSED: ConnectionClosed,
+                ACSPMessage.ACSP_NEW_CONNECTION: NewConnection,
+                ACSPMessage.ACSP_NEW_SESSION: NewSession,
+            }
+            .get(msg_type)
+            .from_payload(msg)
+        )
     except KeyError:
         raise UnsupportedMessageException(int(msg_type))
