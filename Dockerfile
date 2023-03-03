@@ -73,4 +73,5 @@ COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
 WORKDIR /app
 COPY ./acsps ./acsps
 COPY ./main.py .
+VOLUME /data/acsps
 CMD ["python3", "main.py"]
