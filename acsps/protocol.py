@@ -162,7 +162,7 @@ def _parse_leaderboard(chunk: bytes) -> _ParserReturn[LeaderboardType]:
     """
     # first byte is the number of leaderboard entries
     try:
-        size = struct.unpack("B", chunk)[0]
+        size = chunk[0]
         leaderboard_entry_size = 8
 
         entries = chunk[1:]
@@ -170,8 +170,10 @@ def _parse_leaderboard(chunk: bytes) -> _ParserReturn[LeaderboardType]:
 
         for i in range(size):
             offset = i * leaderboard_entry_size
-            car_id, time, laps, completed_flag = struct.unpack("BIHB", chunk[offset:])
-            completed_flag = bool(completed_flag)
+            car_id = entries[offset]
+            time = struct.unpack_from("I", entries, offset + 1)[0]
+            laps = struct.unpack_from("H", entries, offset + 5)[0]
+            completed_flag = bool(entries[offset + 7])
             unpacked_entries.append((car_id, time, laps, completed_flag))
 
         return unpacked_entries, (size * leaderboard_entry_size) + 1
