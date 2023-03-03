@@ -30,8 +30,8 @@ async def udp_loop(bind_addr: str, bind_port: int):
     """
     local = await open_local_endpoint(bind_addr, bind_port)
 
+    logging.info(f"UDP Listening on {bind_addr}:{bind_port}")
     while True:
-        logging.info(f"UDP Listening on {bind_addr}:{bind_port}")
 
         try:
             if local.closed:
