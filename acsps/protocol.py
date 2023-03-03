@@ -124,9 +124,7 @@ def _parse_float(chunk: bytes) -> _ParserReturn[float]:
 
 def _parse_vector3f(chunk: bytes) -> _ParserReturn[Vector3f]:
     try:
-        x = struct.unpack("f", chunk[:4])[0]
-        y = struct.unpack("f", chunk[4:8])[0]
-        z = struct.unpack("f", chunk[8:12])[0]
+        x, y, z = struct.unpack("fff", chunk[:12])[0]
     except struct.error:
         raise MessageParseException(f"Could not unpack to Vector3f: {chunk}")
 
@@ -153,6 +151,33 @@ def _parse_unicode(chunk: bytes) -> _ParserReturn[str]:
         return string.decode("utf-32"), strlen + 1
     except UnicodeDecodeError:
         raise MessageParseException(f"Could not parse as utf-32: {string}")
+
+
+LeaderboardType = list[tuple[int, int, int, bool]]
+
+
+def _parse_leaderboard(chunk: bytes) -> _ParserReturn[LeaderboardType]:
+    """
+    Special parser for leaderboard array
+    """
+    # first byte is the number of leaderboard entries
+    try:
+        size = struct.unpack("B", chunk)[0]
+        leaderboard_entry_size = 8
+
+        entries = chunk[1:]
+        unpacked_entries: LeaderboardType = []
+
+        for i in range(size):
+            offset = i * leaderboard_entry_size
+            car_id, time, laps, completed_flag = struct.unpack("BIHB", chunk[offset:])
+            completed_flag = bool(completed_flag)
+            unpacked_entries.append((car_id, time, laps, completed_flag))
+
+        return unpacked_entries, (size * leaderboard_entry_size) + 1
+
+    except struct.error:
+        raise MessageParseException(f"Could not parse as leaderboard entry list: {chunk}")
 
 
 # Message Classes
@@ -203,13 +228,13 @@ class CarInfo(BaseMessage):
 
 
 class LapCompleted(BaseMessage):
-    __parsers__ = [_parse_byte, _parse_int32, _parse_byte]
+    __parsers__ = [_parse_byte, _parse_int32, _parse_byte, _parse_leaderboard, _parse_float]
 
     car_id: int
     laptime: int
     cuts: int
-
-    # TODO: leaderboard array, grip
+    leaderboard: LeaderboardType
+    grip_level: float
 
 
 class NewConnection(BaseMessage):

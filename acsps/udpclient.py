@@ -72,7 +72,7 @@ async def udp_loop(bind_addr: str, bind_port: int):
                                 driver_name=connection.driver_name,
                                 lap_time_ms=message.laptime,
                                 car_model=connection.car_model,
-                                grip_level=1.0,
+                                grip_level=message.grip_level,
                             )
 
                             lap_time_formatted = format_ms_time(message.laptime)

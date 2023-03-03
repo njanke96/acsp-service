@@ -40,9 +40,6 @@ class RecentServerRecords(BaseModel):
 
 
 class TopRecords(BaseModel):
-    track_name: str
-    track_config: str
-    car_model: str
     count: int
     records: list[LapRecord]
 
@@ -69,9 +66,6 @@ async def get_top(
     records = [LapRecord.from_orm(result) for result in results]
 
     return TopRecords(
-        track_name=track_name,
-        track_config=track_config,
-        car_model=car_model,
         count=len(records),
         records=records,
     )
