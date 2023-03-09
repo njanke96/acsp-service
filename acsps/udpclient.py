@@ -101,7 +101,7 @@ async def udp_loop(bind_addr: str, bind_port: int):
                                 broadcast_msg = proto.broadcast_message(
                                     LAP_TRACKER_MSG_PREFIX +
                                     f"{connection.driver_name} set a new PB of {lap_time_formatted} "
-                                    f"(-{diff_formatted_abs}) for the {connection.car_model} on this track."
+                                    f"(-{diff_formatted_abs}) with the {connection.car_model} on this track."
                                 )
 
                                 local.send(broadcast_msg, addr)
@@ -126,7 +126,7 @@ async def udp_loop(bind_addr: str, bind_port: int):
 
                                 broadcast_msg = proto.broadcast_message(
                                     LAP_TRACKER_MSG_PREFIX +
-                                    f"{connection.driver_name} set the first server record for the "
+                                    f"{connection.driver_name} set the first server record with the "
                                     f"{connection.car_model} on this track with time {lap_time_formatted}"
                                 )
 
@@ -140,7 +140,7 @@ async def udp_loop(bind_addr: str, bind_port: int):
 
                                 broadcast_msg = proto.broadcast_message(
                                     LAP_TRACKER_MSG_PREFIX +
-                                    f"{connection.driver_name} beat the server record for the "
+                                    f"{connection.driver_name} beat the server record with the "
                                     f"{connection.car_model} on this track with time {lap_time_formatted} "
                                     f"(Beat previous SR by {sr_diff_formatted_abs})."
                                 )

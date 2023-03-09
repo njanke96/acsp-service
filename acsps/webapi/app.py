@@ -26,7 +26,8 @@ class LapRecord(BaseModel):
     driver_guid: str
     track_name: str
     track_config: str
-    car_model: str
+    perf_class: str
+    car: str
     driver_name: str
     lap_time_ms: int
     grip_level: float
@@ -56,13 +57,13 @@ async def get_db():
 async def get_top(
     track_name: str = Query(..., description="Track name to show top records for."),
     track_config: str = Query(..., description="Track config to show top records for."),
-    car_model: str = Query(..., description="Car to show top records for."),
+    perf_class: str = Query(..., description="Class (or individual car) to show top records for."),
     db: Database = Depends(get_db),
 ) -> TopRecords:
     """
     Get top records for a track/config/car combination.
     """
-    results = await queries.get_lap_records(db, track_name, track_config, car_model)
+    results = await queries.get_lap_records(db, track_name, track_config, perf_class)
     records = [LapRecord.from_orm(result) for result in results]
 
     return TopRecords(
