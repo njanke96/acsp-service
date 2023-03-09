@@ -90,6 +90,7 @@ async def record_lap_pr(
                 "track_name": track_name,
                 "track_config": track_config,
                 "perf_class": car_class,
+                "points": 0,
                 "driver_name": driver_name,
                 "lap_time_ms": lap_time_ms,
                 "car": car_model,

@@ -6,7 +6,7 @@ from datetime import datetime
 from databases import Database
 from fastapi.routing import APIRoute
 from fastapi import FastAPI, Query, Depends
-from pydantic import BaseModel as PydanticBaseModel
+from pydantic import BaseModel as PydanticBaseModel, Field
 
 import acsps.database.queries as queries
 from acsps.database.main import database
@@ -28,6 +28,7 @@ class LapRecord(BaseModel):
     track_config: str
     perf_class: str
     car: str
+    points: int = Field(0)
     driver_name: str
     lap_time_ms: int
     grip_level: float
@@ -57,13 +58,13 @@ async def get_db():
 async def get_top(
     track_name: str = Query(..., description="Track name to show top records for."),
     track_config: str = Query(..., description="Track config to show top records for."),
-    perf_class: str = Query(..., description="Class (or individual car) to show top records for."),
+    car_model: str = Query(..., description="Car to show top records for."),
     db: Database = Depends(get_db),
 ) -> TopRecords:
     """
     Get top records for a track/config/car combination.
     """
-    results = await queries.get_lap_records(db, track_name, track_config, perf_class)
+    results = await queries.get_lap_records(db, track_name, track_config, car_model)
     records = [LapRecord.from_orm(result) for result in results]
 
     return TopRecords(
