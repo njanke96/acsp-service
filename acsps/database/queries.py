@@ -194,3 +194,27 @@ async def get_recent_broken_records(db: Database):
     )
 
     return await db.fetch_all(query)
+
+
+async def get_unique_tracks_configs(db: Database):
+    count = sqla.func.count()
+    query = (
+        sqla.select(count, lap_times.c.track_name, lap_times.c.track_config)
+        .select_from(lap_times)
+        .group_by(lap_times.c.track_name, lap_times.c.track_config)
+        .order_by(sqla.asc(lap_times.c.track_name), sqla.asc(lap_times.c.track_config))
+    )
+
+    return await db.fetch_all(query)
+
+
+async def get_unique_car_names(db: Database):
+    count = sqla.func.count()
+    query = (
+        sqla.select(count, lap_times.c.perf_class)
+        .select_from(lap_times)
+        .group_by(lap_times.c.perf_class)
+        .order_by(sqla.asc(lap_times.c.perf_class))
+    )
+
+    return await db.fetch_all(query)

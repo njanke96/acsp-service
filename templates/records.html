@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.6.4/flowbite.min.css" rel="stylesheet"/>
+    <title>Shiddy Records</title>
+</head>
+<body>
+<div class="p-4">
+    <h2 class="text-4xl font-extrabold dark:text-white">Shiddy Records</h2>
+    <form action="/records">
+        <div class="flex flex-col space-y-4 md:space-y-0 md:flex-row mt-4 md:space-x-4 max-w-2xl">
+            <div class="flex-1">
+                <label for="track" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    Track and Config
+                </label>
+                <select id="track"
+                        name="track"
+                        required
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                    <option value="">Select...</option>
+                    {% for choice in track_choices %}
+                        <option {% if selected_track == choice['track_name'] + ':' + choice['track_config'] %}
+                            selected {% endif %} value="{{ choice['track_name'] }}:{{ choice['track_config'] }}">
+                            {{ choice['track_name'] }}/{{ choice['track_config'] }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex-1">
+                <label for="car_class" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    Class/Car
+                </label>
+                <select id="car_class"
+                        name="car_class"
+                        required
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                    <option value="">Select...</option>
+                    {% for choice in car_choices %}
+                        <option {% if selected_car == choice['perf_class'] %}
+                            selected {% endif %}
+                            value="{{ choice['perf_class'] }}">{{ choice['perf_class'] }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <button type="submit"
+                class="mt-4 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+            Search
+        </button>
+    </form>
+    <div class="mt-4 relative overflow-x-auto">
+        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+            <tr>
+                <th scope="col" class="px-6 py-3 smol-cell">
+                    Position
+                </th>
+                <th scope="col" class="px-6 py-3">
+                    Name
+                </th>
+                <th scope="col" class="px-6 py-3">
+                    Car
+                </th>
+                <th scope="col" class="px-6 py-3">
+                    Time
+                </th>
+                <th scope="col" class="px-6 py-3">
+                    Grip
+                </th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in results %}
+                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                    <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                        {{ row[0] }}
+                    </th>
+                    <td class="px-6 py-4">
+                        {{ row[1].driver_name }}
+                    </td>
+                    <td class="px-6 py-4">
+                        {{ row[1].car }}
+                    </td>
+                    <td class="px-6 py-4">
+                        {{ format_ms(row[1].lap_time_ms) }}
+                    </td>
+                    <td class="px-6 py-4">
+                        {{ int(row[1].grip_level * 100) }} %
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+<style>
+    .smol-cell {
+        width: 0.1%;
+        white-space: nowrap;
+    }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.6.4/flowbite.min.js"></script>
+</html>

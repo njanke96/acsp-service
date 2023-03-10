@@ -5,13 +5,18 @@ from datetime import datetime
 
 from databases import Database
 from fastapi.routing import APIRoute
-from fastapi import FastAPI, Query, Depends
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from fastapi import FastAPI, Query, Depends, Request, HTTPException
 from pydantic import BaseModel as PydanticBaseModel, Field
 
 import acsps.database.queries as queries
+from acsps.common import format_ms_time
 from acsps.database.main import database
 
 app = FastAPI(title="ACSPS Web API", redoc_url=None)
+
+templates = Jinja2Templates(directory="templates")
 
 
 # Models
@@ -90,9 +95,51 @@ async def get_recent_server_records(
             latest_timestamp = record.timestamp
 
     return RecentServerRecords(
-        latest_timestamp=latest_timestamp,
-        count=len(records),
-        records=records
+        latest_timestamp=latest_timestamp, count=len(records), records=records
+    )
+
+
+@app.get("/records", response_class=HTMLResponse)
+async def get_records_page(
+    request: Request,
+    track: str | None = Query(None),
+    car_class: str | None = Query(None),
+    db: Database = Depends(get_db),
+):
+    if track is None or car_class is None:
+        records = []
+        track_name = None
+        track_config = None
+    else:
+        try:
+            track_split = track.split(":")
+            track_name = track_split[0]
+            track_config = track_split[1]
+        except IndexError:
+            raise HTTPException(400)
+
+        results = await queries.get_lap_records(db, track_name, track_config, car_class)
+        records = [
+            (idx + 1, LapRecord.from_orm(result)) for idx, result in enumerate(results)
+        ]
+
+    track_choices = await queries.get_unique_tracks_configs(db)
+    car_choices = await queries.get_unique_car_names(db)
+
+    return templates.TemplateResponse(
+        "records.html",
+        {
+            "request": request,
+            "results": records,
+            "format_ms": format_ms_time,
+            "track_choices": track_choices,
+            "car_choices": car_choices,
+            "int": int,
+            "selected_track": f"{track_name}:{track_config}"
+            if track_name is not None and track_config is not None
+            else ":",
+            "selected_car": car_class,
+        },
     )
 
 

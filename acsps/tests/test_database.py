@@ -43,7 +43,6 @@ async def test_record_lap_pr(database_client: Database):
         assert result["track_config"] == "gp"
         assert result["driver_name"] == "Fast Driver"
         assert result["lap_time_ms"] == 2881
-        assert result["car_model"] == "ks_car"
         assert result["grip_level"] == 1.0
 
         # should not update the personal record if the lap time was slower
@@ -85,7 +84,6 @@ async def test_get_lap_pr(database_client: Database):
         assert result["track_config"] == "gp"
         assert result["driver_name"] == "Fast Driver"
         assert result["lap_time_ms"] == 2881
-        assert result["car_model"] == "ks_car"
         assert result["grip_level"] == 1.0
 
 
