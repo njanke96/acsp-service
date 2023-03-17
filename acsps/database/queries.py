@@ -31,6 +31,14 @@ car_classes = {
     "lotus_2_eleven_gt4": "gt4",
     "ks_maserati_gt_mc_gt4": "gt4",
     "ks_porsche_cayman_gt4_clubsport": "gt4",
+    "tc_legends_alfa_gta": "gt70",
+    "tc_legends_amg_300sel": "gt70",
+    "tc_legends_bmw_2002": "gt70",
+    "tc_legends_datsun_510": "gt70",
+    "tc_legends_ford_escort": "gt70",
+    "tc_legends_mazda_rx3": "gt70",
+    "tc_legends_911rs_27": "gt70",
+    "tc_legends_alpine_a110": "gt70",
 }
 
 
